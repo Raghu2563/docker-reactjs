@@ -17,11 +17,7 @@ pipeline {
     stages {
         stage('Source') {
             steps {
-                git branch: 'main', 
-                    changelog: false, 
-                    credentialsId: 'github', 
-                    poll: false, 
-                    url: 'https://github.com/thejungwon/docker-reactjs.git'
+                git branch: 'master', changelog: false, credentialsId: 'gh-up', poll: false, url: 'https://github.com/Raghu2563/docker-reactjs.git'
             }
         }
 
