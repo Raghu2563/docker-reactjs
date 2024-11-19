@@ -14,6 +14,7 @@ pipeline {
         VERSION = "1.0.${BUILD_NUMBER}"
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
     }
+
     parameters {
         booleanParam(name: 'PROD_BUILD', defaultValue: true, description: 'Enable this as a production build')
     }
@@ -30,7 +31,8 @@ pipeline {
                 sh 'npm install'
             }
         }
-       /* stage('SonarQube Analysis') {
+
+        /* stage('SonarQube Analysis') {
             steps {
                 script {
                     def scannerHome = tool 'SonarScanner' // Ensure 'SonarScanner' is configured in Global Tool Configuration
@@ -41,9 +43,9 @@ pipeline {
                     }
                 }
             }
-        }*/
-       
-       stage('Test') {
+        } */
+
+        stage('Test') {
             parallel {
                 stage('Unit Test') {
                     steps {
@@ -59,31 +61,30 @@ pipeline {
         }
 
         stage('Build Docker Image') {
-    steps {
-        script {
-            sh """
-                docker build -t 13.201.32.66:8085/repository/docker-hosted/react-app:${VERSION} \
-                -t ${DOCKER_REPO}:${VERSION} \
-                -t ${DOCKER_REPO}:latest .
-            """
-        }
-    }
-}
-        
-        stage('Publish to Nexus') {
-    steps {
-        script {
-            withCredentials([usernamePassword(credentialsId: 'nexus-credentials', 
-                                            usernameVariable: 'NEXUS_USER', 
-                                            passwordVariable: 'NEXUS_PASS')]) {
-                sh "docker login -u ${NEXUS_USER} -p ${NEXUS_PASS} 13.201.32.66:8085"
-                sh "docker push 13.201.32.66:8085/repository/docker-hosted/${DOCKER_IMAGE}:${VERSION}"
-                
+            steps {
+                script {
+                    sh """
+                        docker build -t 13.201.32.66:8085/repository/docker-hosted/react-app:${VERSION} \
+                        -t ${DOCKER_REPO}:${VERSION} \
+                        -t ${DOCKER_REPO}:latest .
+                    """
+                }
             }
         }
-    }
-}
-    
+        
+        stage('Publish to Nexus') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'nexus-credentials', 
+                        usernameVariable: 'NEXUS_USER', 
+                        passwordVariable: 'NEXUS_PASS')]) {
+                        sh "docker login -u ${NEXUS_USER} -p ${NEXUS_PASS} 13.201.32.66:8085"
+                        sh "docker push 13.201.32.66:8085/repository/docker-hosted/${DOCKER_IMAGE}:${VERSION}"
+                    }
+                }
+            }
+        }
+
         stage('Push to Docker Hub') {
             steps {
                 script {
@@ -105,8 +106,8 @@ pipeline {
             }
             steps {
                 withCredentials([sshUserPrivateKey(credentialsId: 'pk_react_app', 
-                                                 keyFileVariable: 'SSHKEY', 
-                                                 usernameVariable: 'USER')]) {
+                    keyFileVariable: 'SSHKEY', 
+                    usernameVariable: 'USER')]) {
                     sh '''
                         # Copy docker-compose file to EC2
                         rsync -avzP -e "ssh -o StrictHostKeyChecking=no -i $SSHKEY" \
@@ -123,7 +124,38 @@ pipeline {
                 }
             }
         }
-    
     }
-    
-}    
+
+    post {
+        always {
+            script {
+                echo "Cleaning up Docker images..."
+
+                // Try to remove specific images and suppress errors if the image doesn't exist
+                try {
+                    sh "docker rmi ${DOCKER_REPO}:${VERSION} || true"
+                    sh "docker rmi ${DOCKER_REPO}:latest || true"
+                    sh "docker rmi ${NEXUS_URL}/${DOCKER_IMAGE}:${VERSION} || true"
+                    sh "docker rmi ${DOCKER_IMAGE}:${VERSION} || true"
+                } catch (Exception e) {
+                    echo "Error during image removal: ${e.getMessage()}"
+                }
+
+                // Logout from Nexus and Docker Hub registries
+                sh "docker logout ${NEXUS_URL} || true"
+                sh "docker logout || true"
+
+                // Clean up the workspace after the build
+                cleanWs()
+            }
+        }
+
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+
+        failure {
+            echo 'Pipeline failed!'
+        }
+    }
+}
