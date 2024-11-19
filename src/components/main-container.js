@@ -65,7 +65,7 @@ export default class MainContainer extends Component {
         <div className="row">
           <div className="col s12">
             <div className="section">
-              <h3 className="header">Cryptocurrency Monitor Auto</h3>
+              <h3 className="header">Cryptocurrency Monitor Auto Test</h3>
             </div>
           </div>
         </div>
