@@ -32,7 +32,7 @@ pipeline {
             }
         }
 
-        /* stage('SonarQube Analysis') {
+        stage('SonarQube Analysis') {
             steps {
                 script {
                     def scannerHome = tool 'SonarScanner' // Ensure 'SonarScanner' is configured in Global Tool Configuration
@@ -43,7 +43,7 @@ pipeline {
                     }
                 }
             }
-        } */
+        } 
 
         stage('Test') {
             parallel {
