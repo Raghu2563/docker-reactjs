@@ -1,0 +1,8 @@
+version: '3.8'
+
+services:
+  react-app:
+    image: ${DOCKER_REPO:-your-dockerhub-username/react-app}:${VERSION:-latest}
+    ports:
+      - "80:80"
+    restart: always
