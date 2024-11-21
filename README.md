@@ -1,6 +1,6 @@
 # Simple React
 
-Sample React.js application for the Docker environment.
+Sample React.js application for the Docker environment test.
 
 ## Getting Started
 ![Screen Shopt](images/screenshot.png?raw=true "Screen Shot")
